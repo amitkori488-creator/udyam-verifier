@@ -112,12 +112,10 @@ st.markdown("""
 
 # --- Session State ---
 if 'history' not in st.session_state:
-    # Starts empty - NO MOCK DATA
     st.session_state.history = []
 
 # --- Helper Functions ---
 def add_to_history(pan, name, udyam, status):
-    # Insert at the beginning of the list
     st.session_state.history.insert(0, {
         "Time": datetime.now().strftime("%H:%M:%S"),
         "UDYAM NO.": udyam,
@@ -127,8 +125,6 @@ def add_to_history(pan, name, udyam, status):
     })
 
 def fetch_udyam_details(client_id, client_secret, pan_number, use_sandbox):
-    # --- REAL API LOGIC ONLY ---
-    
     if not client_id or not client_secret:
         return {
             "status": "ERROR", 
@@ -181,8 +177,7 @@ def process_dataframe(data_list):
     # Create S.No. (1 to N)
     df.insert(0, 'S.No.', range(1, 1 + len(df)))
     
-    # STRICT COLUMN ORDER: S.No., Status, UDYAM NO., PAN, Entity Name, Time
-    # Ensure all columns exist to prevent errors
+    # STRICT COLUMN ORDER
     required_cols = ['S.No.', 'Status', 'UDYAM NO.', 'PAN', 'Entity Name', 'Time']
     for col in required_cols:
         if col not in df.columns:
@@ -192,7 +187,6 @@ def process_dataframe(data_list):
 
 # --- SIDEBAR CONTENT ---
 with st.sidebar:
-    # Header
     st.markdown("""
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #1e293b;">
             <div style="width: 32px; height: 32px; background-color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
@@ -202,7 +196,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    # Configuration
     st.markdown("<p style='font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;'>Configuration</p>", unsafe_allow_html=True)
 
     try:
@@ -226,7 +219,6 @@ with st.sidebar:
     
     st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
     
-    # --- NAVIGATION MENU (Making options Live) ---
     st.markdown("<p style='font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;'>Platform</p>", unsafe_allow_html=True)
     
     selected_page = st.radio(
@@ -240,8 +232,6 @@ with st.sidebar:
 
 
 # --- MAIN CONTENT ROUTING ---
-
-# Common Page Header
 col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
     st.markdown(f'<h1 style="margin-bottom: 0;">{selected_page}</h1>', unsafe_allow_html=True)
@@ -352,7 +342,6 @@ if selected_page == "Verify Identity":
         st.markdown("<h3 style='font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 12px;'>Recent Verifications</h3>", unsafe_allow_html=True)
         
         df_recent = process_dataframe(st.session_state.history)
-        # Show only top 5 recent
         st.dataframe(
             df_recent.head(5),
             use_container_width=True,
@@ -373,7 +362,6 @@ elif selected_page == "History Log":
     if st.session_state.history:
         df = process_dataframe(st.session_state.history)
         
-        # --- FILTERS ---
         with st.container():
             st.markdown("<div style='background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;'>", unsafe_allow_html=True)
             f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
@@ -382,11 +370,9 @@ elif selected_page == "History Log":
                 search_term = st.text_input("🔍 Search", placeholder="PAN or Company Name", label_visibility="collapsed")
             
             with f_col2:
-                # S.No Filter (Range)
                 min_sno = int(df['S.No.'].min())
                 max_sno = int(df['S.No.'].max())
                 
-                # Check to prevent slider error if only 1 item
                 if min_sno == max_sno:
                     selected_range = (min_sno, max_sno)
                     st.caption(f"S.No: {min_sno}")
@@ -394,24 +380,20 @@ elif selected_page == "History Log":
                     selected_range = st.slider("S.No. Range", min_value=min_sno, max_value=max_sno, value=(min_sno, max_sno), label_visibility="collapsed")
             
             with f_col3:
-                # Filter Logic
                 filtered_df = df.copy()
                 
-                # Apply Text Search
                 if search_term:
                     filtered_df = filtered_df[
                         filtered_df['PAN'].str.contains(search_term, case=False) | 
                         filtered_df['Entity Name'].str.contains(search_term, case=False)
                     ]
                 
-                # Apply S.No Filter
                 if min_sno != max_sno:
                     filtered_df = filtered_df[
                         (filtered_df['S.No.'] >= selected_range[0]) & 
                         (filtered_df['S.No.'] <= selected_range[1])
                     ]
                 
-                # Download Button (Exports the FILTERED view)
                 excel_data = convert_df_to_excel(filtered_df)
                 st.download_button(
                     label="📥 Download Excel",
@@ -422,7 +404,6 @@ elif selected_page == "History Log":
                 )
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Main Table
         st.dataframe(
             filtered_df, 
             use_container_width=True,
@@ -435,4 +416,54 @@ elif selected_page == "History Log":
                 "Entity Name": st.column_config.TextColumn("Entity Name", width="large"),
                 "Time": st.column_config.TextColumn("Time", width="small"),
             }
- 
+        )
+        st.caption(f"Showing {len(filtered_df)} of {len(df)} records")
+        
+    else:
+        st.info("No verification history available. Please verify a PAN first.")
+
+
+# --- PAGE 3: USAGE ANALYTICS ---
+elif selected_page == "Usage Analytics":
+    if st.session_state.history:
+        df = process_dataframe(st.session_state.history)
+        
+        total_calls = len(df)
+        verified_count = len(df[df['Status'] == 'Verified'])
+        not_found_count = len(df[df['Status'] == 'Not Found'])
+        
+        success_rate = round((verified_count / total_calls) * 100, 1) if total_calls > 0 else 0
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total API Calls", total_calls)
+        m2.metric("Verified Entities", verified_count)
+        m3.metric("Not Found", not_found_count)
+        m4.metric("Success Rate", f"{success_rate}%")
+
+        st.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+        
+        col_c1, col_c2 = st.columns([1, 2])
+        
+        with col_c1:
+            st.subheader("Status Distribution")
+            status_counts = df['Status'].value_counts()
+            st.bar_chart(status_counts)
+        
+        with col_c2:
+            st.subheader("Live Feed")
+            st.dataframe(
+                df.head(10), 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "S.No.": st.column_config.NumberColumn("S.No.", width="small"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "UDYAM NO.": st.column_config.TextColumn("UDYAM NO.", width="medium"),
+                    "PAN": st.column_config.TextColumn("PAN", width="medium"),
+                    "Entity Name": st.column_config.TextColumn("Entity Name", width="large"),
+                    "Time": st.column_config.TextColumn("Time", width="small"),
+                }
+            )
+
+    else:
+        st.info("Insufficient data to generate analytics. Please verify some entities first.")
