@@ -7,7 +7,6 @@ from datetime import datetime
 import io
 
 # --- Page Config ---
-# Setting page_title here removes the default "· Streamlit" suffix in the browser tab
 st.set_page_config(
     page_title="CorpVerify | Udyam Intelligence",
     page_icon="🛡️",
@@ -19,50 +18,23 @@ st.set_page_config(
 st.markdown("""
     <style>
         /* --- 1. HIDE STREAMLIT BRANDING --- */
-        
-        /* Hide Hamburger Menu (Top Right) */
-        #MainMenu {
-            visibility: hidden;
-        }
-        
-        /* Hide "Made with Streamlit" Footer */
-        footer {
-            visibility: hidden;
-        }
-
-        /* Hide "Hosted with Streamlit" and Deploy Button */
-        .stDeployButton {
-            display: none;
-        }
-        
-        /* Hide the colored header line (Rainbow decoration) */
-        header[data-testid="stHeader"] {
-            background-color: transparent;
-            border: none;
-        }
-        
-        /* Eliminate top whitespace caused by the hidden header */
-        div[class^="block-container"] {
-            padding-top: 2rem;
-        }
+        #MainMenu { visibility: hidden; }
+        footer { visibility: hidden; }
+        .stDeployButton { display: none; }
+        header[data-testid="stHeader"] { background-color: transparent; border: none; }
+        div[class^="block-container"] { padding-top: 2rem; }
 
         /* --- 2. APP STYLING --- */
-
-        /* Import Inter Font */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        /* Global Reset & Font */
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
             color: #0f172a;
         }
         
-        /* Main Background */
-        .stApp {
-            background-color: #f8fafc;
-        }
+        .stApp { background-color: #f8fafc; }
         
-        /* SIDEBAR STYLING (Dark Theme) */
+        /* SIDEBAR STYLING */
         section[data-testid="stSidebar"] {
             background-color: #0f172a;
             border-right: 1px solid #1e293b;
@@ -71,8 +43,33 @@ st.markdown("""
         section[data-testid="stSidebar"] h2, 
         section[data-testid="stSidebar"] h3, 
         section[data-testid="stSidebar"] label, 
-        section[data-testid="stSidebar"] .stMarkdown {
+        section[data-testid="stSidebar"] .stMarkdown,
+        section[data-testid="stSidebar"] p {
             color: #e2e8f0 !important;
+        }
+        
+        /* Sidebar Navigation Radio Styling */
+        section[data-testid="stSidebar"] .stRadio > div {
+            gap: 0px;
+        }
+        section[data-testid="stSidebar"] .stRadio label {
+            background-color: transparent;
+            color: #94a3b8 !important;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            font-weight: 500;
+        }
+        section[data-testid="stSidebar"] .stRadio label:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white !important;
+        }
+        /* Active Selection Styling */
+        section[data-testid="stSidebar"] .stRadio label[data-checked="true"] {
+            background-color: #2563eb !important;
+            color: white !important;
         }
         
         /* Sidebar Inputs */
@@ -82,16 +79,16 @@ st.markdown("""
             border: 1px solid #334155;
         }
         
-        /* Card Containers (White, Shadow, Rounded) */
+        /* Content Cards */
         div[data-testid="stVerticalBlock"] > div[style*="background-color"] {
             background-color: white;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         }
 
-        /* Verify Button Styling */
+        /* Buttons & Inputs */
         div.stButton > button {
             background-color: #2563eb;
             color: white;
@@ -99,34 +96,16 @@ st.markdown("""
             height: 48px;
             font-weight: 600;
             border: none;
-            transition: all 0.2s;
         }
         div.stButton > button:hover {
             background-color: #1d4ed8;
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
-        
-        /* Input Field Styling */
         .stTextInput input {
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #cbd5e1;
             height: 48px;
-            font-size: 1rem;
-            letter-spacing: 0.05em;
-        }
-
-        /* Custom Status Badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 12px;
-            background-color: #ecfdf5;
-            color: #047857;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid #a7f3d0;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -138,6 +117,7 @@ if 'history' not in st.session_state:
         {"Time": "1 hour ago", "UDYAM NO.": "UDYAM-DL-01-0056789", "PAN": "FGHIJ5678K", "Entity Name": "GLOBAL TRADERS & CO", "Status": "Verified"},
     ]
 
+# --- Helper Functions ---
 def add_to_history(pan, name, udyam, status):
     st.session_state.history.insert(0, {
         "Time": datetime.now().strftime("%H:%M:%S"),
@@ -148,23 +128,13 @@ def add_to_history(pan, name, udyam, status):
     })
 
 def fetch_udyam_details(client_id, client_secret, pan_number, use_sandbox):
-    # Mocking logic for the UI demo if no keys provided, 
-    # otherwise uses real logic
-    if not client_id and not client_secret:
-        # Simulation delay
-        import time
-        time.sleep(1.5)
+    # --- REAL API LOGIC ONLY (Mocking Removed) ---
+    
+    # Validation
+    if not client_id or not client_secret:
         return {
-            "status": "SUCCESS",
-            "data": {
-                "udyamNumber": "UDYAM-KR-03-0098765",
-                "name": "OMEGA SUPPLY CHAIN SOLUTIONS",
-                "enterprise_type": "MEDIUM",
-                "state": "KARNATAKA",
-                "district": "BANGALORE URBAN",
-                "major_activity": "MANUFACTURING",
-                "date_of_registration": "2021-11-20"
-            }
+            "status": "ERROR", 
+            "message": "API Keys Missing. Please provide Client ID and Secret in sidebar."
         }
 
     if use_sandbox:
@@ -178,15 +148,26 @@ def fetch_udyam_details(client_id, client_secret, pan_number, use_sandbox):
         "x-client-secret": client_secret,
         "Content-Type": "application/json",
     }
+    
     try:
         response = requests.post(endpoint, headers=headers, data=json.dumps({
             "verification_id": str(uuid.uuid4()),
             "pan": pan_number
-        }))
-        response.raise_for_status()
+        }), timeout=10)
+        
+        # Handle non-200 but valid JSON responses (like 400 Bad Request from API)
+        if response.status_code != 200:
+            try:
+                err_data = response.json()
+                return {"status": "ERROR", "message": err_data.get("message", response.reason)}
+            except:
+                return {"status": "ERROR", "message": f"HTTP {response.status_code}: {response.reason}"}
+
         return response.json()
+    except requests.exceptions.Timeout:
+        return {"status": "ERROR", "message": "Request timed out."}
     except Exception as e:
-        return {"error": str(e), "status": "ERROR"}
+        return {"status": "ERROR", "message": str(e)}
 
 def convert_df_to_excel(df):
     output = io.BytesIO()
@@ -196,7 +177,7 @@ def convert_df_to_excel(df):
 
 # --- SIDEBAR CONTENT ---
 with st.sidebar:
-    # Custom Logo Header
+    # Header
     st.markdown("""
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #1e293b;">
             <div style="width: 32px; height: 32px; background-color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
@@ -206,9 +187,10 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
+    # Configuration
     st.markdown("<p style='font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;'>Configuration</p>", unsafe_allow_html=True)
 
-    # Inputs
+    # API Keys Logic
     try:
         default_id = st.secrets["CASHFREE_CLIENT_ID"]
         default_secret = st.secrets["CASHFREE_CLIENT_SECRET"]
@@ -229,26 +211,26 @@ with st.sidebar:
     use_sandbox = st.toggle("Sandbox Mode", value=True)
     
     st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
+    
+    # Platform Navigation (Live Radio Buttons)
     st.markdown("<p style='font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;'>Platform</p>", unsafe_allow_html=True)
     
-    st.markdown("""
-        <div style="background: #2563eb; color: white; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-            Verify Identity
-        </div>
-        <div style="color: #94a3b8; padding: 10px 12px; font-size: 14px; font-weight: 500;">History Log</div>
-        <div style="color: #94a3b8; padding: 10px 12px; font-size: 14px; font-weight: 500;">Usage Analytics</div>
-    """, unsafe_allow_html=True)
+    selected_page = st.radio(
+        "Navigate",
+        ["Verify Identity", "History Log", "Usage Analytics"],
+        label_visibility="collapsed"
+    )
 
     st.markdown("---")
-    st.caption("Admin Access • v2.5.0")
+    st.caption("Admin Access • v2.6.0")
 
 
-# --- MAIN CONTENT ---
+# --- MAIN CONTENT ROUTING ---
 
-# 1. Custom Header
+# Common Header for all pages
 col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
-    st.markdown('<h1 style="margin-bottom: 0;">Udyam Verification</h1>', unsafe_allow_html=True)
+    st.markdown(f'<h1 style="margin-bottom: 0;">{selected_page}</h1>', unsafe_allow_html=True)
 with col_h2:
     st.markdown("""
         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; height: 100%;">
@@ -261,124 +243,129 @@ with col_h2:
 
 st.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
 
-# 2. Search Card
-with st.container():
-    st.markdown("""
-        <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Verify Business Entity</h2>
-        <p style="color: #64748b; margin-bottom: 24px;">Enter the Permanent Account Number (PAN) to fetch official Udyam Registration details via Cashfree API.</p>
-    """, unsafe_allow_html=True)
 
-    c1, c2 = st.columns([5, 1])
-    with c1:
-        pan_number = st.text_input("PAN Number", placeholder="ABCDE1234F", label_visibility="collapsed").upper()
-    with c2:
-        fetch_btn = st.button("Verify", use_container_width=True)
-
-
-# 3. Logic & Results
-if fetch_btn:
-    if len(pan_number) < 5:
-        st.toast("Please enter a valid PAN.", icon="⚠️")
-    else:
-        # Simulate loading state
-        with st.spinner("Fetching data from registry..."):
-            response = fetch_udyam_details(client_id, client_secret, pan_number, use_sandbox)
-
-        if response.get("status") == "SUCCESS":
-            data = response.get("data", {})
-            add_to_history(pan_number, data.get("name"), data.get("udyamNumber"), "Verified")
-            
-            # --- CUSTOM RESULT UI TO MATCH REACT ---
-            st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
-            
-            # We use st.columns inside a container to mimic the flex layout
-            with st.container():
-                st.markdown(f"""
-                <div style="display: flex; flex-wrap: wrap; gap: 24px; background-color: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    
-                    <!-- Left Column: Status & Udyam No -->
-                    <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 16px;">
-                        <!-- Status Card -->
-                        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d1fae5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                <div style="width: 24px; height: 24px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #059669;">✔</div>
-                                <span style="color: #047857; font-weight: 600; font-size: 14px;">Active & Verified</span>
-                            </div>
-                            <div style="font-size: 28px; font-weight: 700; color: #0f172a;">{data.get('enterprise_type', 'N/A')}</div>
-                            <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;">Enterprise Type</div>
-                        </div>
-
-                        <!-- Number Card -->
-                        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                             <div style="font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Udyam Registration Number</div>
-                             <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-                                <code style="color: #2563eb; font-weight: 700; font-size: 14px;">{data.get('udyamNumber')}</code>
-                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Details Grid -->
-                    <div style="flex: 2; min-width: 300px; background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-                            <h3 style="font-size: 16px; font-weight: 600; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
-                                🏢 Entity Details
-                            </h3>
-                            <span style="color: #2563eb; font-size: 12px; font-weight: 500; cursor: pointer;">Download Report</span>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                            <div>
-                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Registered Name</label>
-                                <div style="font-weight: 500; color: #0f172a;">{data.get('name')}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Major Activity</label>
-                                <div style="font-weight: 500; color: #0f172a;">{data.get('major_activity')}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Registration Date</label>
-                                <div style="font-weight: 500; color: #0f172a;">{data.get('date_of_registration')}</div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Location</label>
-                                <div style="font-weight: 500; color: #0f172a;">{data.get('district')}, {data.get('state')}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                """, unsafe_allow_html=True)
-
-        elif response.get("status") == "UDYAM_NOT_FOUND":
-            add_to_history(pan_number, "Unknown", "-", "Not Found")
-            st.error(f"No Udyam Registration found for PAN: {pan_number}")
-        else:
-            st.error(f"API Error: {response.get('message', 'Unknown Error')}")
-
-
-# 4. History Table
-st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
-
-h_col1, h_col2 = st.columns([1, 1])
-with h_col1:
-    st.markdown("<h3 style='font-size: 18px; font-weight: 600; color: #1e293b;'>Recent Verifications</h3>", unsafe_allow_html=True)
-
-# Prepare DataFrame
-df = pd.DataFrame(st.session_state.history)
-if not df.empty:
-    df.insert(0, 'S.No.', range(1, 1 + len(df)))
-    
-    # Export Controls (Visual match)
+# --- PAGE 1: VERIFY IDENTITY ---
+if selected_page == "Verify Identity":
     with st.container():
-        row1, row2, row3 = st.columns([1, 1, 4])
-        with row1:
-            start_row = st.number_input("Start", min_value=1, max_value=len(df), value=1, label_visibility="collapsed")
-        with row2:
-            end_row = st.number_input("End", min_value=start_row, max_value=len(df), value=len(df), label_visibility="collapsed")
-        with row3:
-            if st.button("Download Excel Report", key="dl_btn"):
-                # Real app would trigger download here
-                pass
+        st.markdown("""
+            <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Verify Business Entity</h2>
+            <p style="color: #64748b; margin-bottom: 24px;">Enter the Permanent Account Number (PAN) to fetch official Udyam Registration details via Cashfree API.</p>
+        """, unsafe_allow_html=True)
+
+        c1, c2 = st.columns([5, 1])
+        with c1:
+            pan_number = st.text_input("PAN Number", placeholder="ABCDE1234F", label_visibility="collapsed").upper()
+        with c2:
+            fetch_btn = st.button("Verify", use_container_width=True)
+
+    if fetch_btn:
+        if len(pan_number) < 5:
+            st.toast("Please enter a valid PAN.", icon="⚠️")
+        else:
+            with st.spinner("Connecting to Registry API..."):
+                response = fetch_udyam_details(client_id, client_secret, pan_number, use_sandbox)
+
+            if response.get("status") == "SUCCESS":
+                # Ensure we handle nested data structure if API returns it, strictly standardizing here
+                data = response.get("data", {})
+                
+                # Check if data is populated (Cashfree sometimes returns SUCCESS but empty data for invalid PANs)
+                if not data:
+                    st.error("API returned Success but no data. Verification ID: " + str(response.get("verification_id", "N/A")))
+                else:
+                    add_to_history(pan_number, data.get("name", "N/A"), data.get("udyamNumber", "N/A"), "Verified")
+                    
+                    st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="display: flex; flex-wrap: wrap; gap: 24px; background-color: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            
+                            <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 16px;">
+                                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d1fae5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                        <div style="width: 24px; height: 24px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #059669;">✔</div>
+                                        <span style="color: #047857; font-weight: 600; font-size: 14px;">Active & Verified</span>
+                                    </div>
+                                    <div style="font-size: 28px; font-weight: 700; color: #0f172a;">{data.get('enterprise_type', 'N/A')}</div>
+                                    <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px;">Enterprise Type</div>
+                                </div>
+
+                                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                     <div style="font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Udyam Registration Number</div>
+                                     <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                                        <code style="color: #2563eb; font-weight: 700; font-size: 14px;">{data.get('udyamNumber', 'N/A')}</code>
+                                     </div>
+                                </div>
+                            </div>
+
+                            <div style="flex: 2; min-width: 300px; background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+                                    <h3 style="font-size: 16px; font-weight: 600; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                        🏢 Entity Details
+                                    </h3>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                    <div>
+                                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Registered Name</label>
+                                        <div style="font-weight: 500; color: #0f172a;">{data.get('name', 'N/A')}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Major Activity</label>
+                                        <div style="font-weight: 500; color: #0f172a;">{data.get('major_activity', 'N/A')}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Registration Date</label>
+                                        <div style="font-weight: 500; color: #0f172a;">{data.get('date_of_registration', 'N/A')}</div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Location</label>
+                                        <div style="font-weight: 500; color: #0f172a;">{data.get('district', '')}, {data.get('state', '')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+            elif response.get("status") == "UDYAM_NOT_FOUND":
+                add_to_history(pan_number, "Unknown", "-", "Not Found")
+                st.error(f"No Udyam Registration found for PAN: {pan_number}")
+            elif response.get("status") == "ERROR":
+                st.error(f"System Error: {response.get('message')}")
+            else:
+                st.error(f"API Error: {response.get('message', 'Unknown Error')}")
+
+
+# --- PAGE 2: HISTORY LOG ---
+elif selected_page == "History Log":
+    df = pd.DataFrame(st.session_state.history)
+    
+    if not df.empty:
+        # Data Preparation
+        df.insert(0, 'S.No.', range(1, 1 + len(df)))
+        df = df[['S.No.', 'Status', 'UDYAM NO.', 'PAN', 'Entity Name', 'Time']]
+        
+        # Filter Controls
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            search_term = st.text_input("Search History", placeholder="Enter PAN or Company Name", label_visibility="collapsed")
+        with col3:
+            # Excel Logic
+            excel_data = convert_df_to_excel(df)
+            st.download_button(
+                label="Download Report",
+                data=excel_data,
+                file_name=f"verification_report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        # Filtering logic
+        if search_term:
+            df = df[
+                df['PAN'].str.contains(search_term, case=False) | 
+                df['Entity Name'].str.contains(search_term, case=False)
+            ]
 
         st.dataframe(
             df, 
@@ -386,11 +373,43 @@ if not df.empty:
             hide_index=True,
             column_config={
                 "S.No.": st.column_config.NumberColumn("S.No.", width="small"),
+                "Status": st.column_config.TextColumn("Status", width="small"),
                 "UDYAM NO.": st.column_config.TextColumn("UDYAM NO.", width="medium"),
-                "PAN": st.column_config.TextColumn("PAN", width="small"),
+                "PAN": st.column_config.TextColumn("PAN", width="medium"),
                 "Entity Name": st.column_config.TextColumn("Entity Name", width="large"),
-                "Status": st.column_config.TextColumn("Status")
+                "Time": st.column_config.TextColumn("Time", width="small"),
             }
         )
-else:
-    st.info("No verification history available.")
+    else:
+        st.info("No verification history available yet. Perform a search to build logs.")
+
+
+# --- PAGE 3: USAGE ANALYTICS ---
+elif selected_page == "Usage Analytics":
+    df = pd.DataFrame(st.session_state.history)
+    
+    if not df.empty:
+        # Metrics
+        total_calls = len(df)
+        verified_count = len(df[df['Status'] == 'Verified'])
+        not_found_count = len(df[df['Status'] == 'Not Found'])
+        success_rate = round((verified_count / total_calls) * 100, 1)
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total API Calls", total_calls)
+        m2.metric("Verified Entities", verified_count)
+        m3.metric("Not Found", not_found_count)
+        m4.metric("Success Rate", f"{success_rate}%")
+
+        st.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
+        
+        # Simple Chart
+        st.subheader("Verification Status Distribution")
+        status_counts = df['Status'].value_counts()
+        st.bar_chart(status_counts)
+        
+        st.subheader("Recent Activity Log")
+        st.dataframe(df[['Time', 'PAN', 'Status']], use_container_width=True, hide_index=True)
+
+    else:
+        st.info("Insufficient data to generate analytics. Please verify some entities first.")
