@@ -117,6 +117,7 @@ if 'history' not in st.session_state:
 
 # --- Helper Functions ---
 def add_to_history(pan, name, udyam, status):
+    # Insert at the beginning of the list
     st.session_state.history.insert(0, {
         "Time": datetime.now().strftime("%H:%M:%S"),
         "UDYAM NO.": udyam,
@@ -171,6 +172,24 @@ def convert_df_to_excel(df):
         df.to_excel(writer, index=False, sheet_name='Verification History')
     return output.getvalue()
 
+def process_dataframe(data_list):
+    """Standardizes the dataframe structure"""
+    if not data_list:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(data_list)
+    # Create S.No. (1 to N)
+    df.insert(0, 'S.No.', range(1, 1 + len(df)))
+    
+    # STRICT COLUMN ORDER: S.No., Status, UDYAM NO., PAN, Entity Name, Time
+    # Ensure all columns exist to prevent errors
+    required_cols = ['S.No.', 'Status', 'UDYAM NO.', 'PAN', 'Entity Name', 'Time']
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = "-"
+            
+    return df[required_cols]
+
 # --- SIDEBAR CONTENT ---
 with st.sidebar:
     # Header
@@ -217,7 +236,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.caption("Admin Access • v2.7.0")
+    st.caption("Admin Access • v2.8.0")
 
 
 # --- MAIN CONTENT ROUTING ---
@@ -327,42 +346,15 @@ if selected_page == "Verify Identity":
             else:
                 st.error(f"API Error: {response.get('message', 'Unknown Error')}")
 
-
-# --- PAGE 2: HISTORY LOG ---
-elif selected_page == "History Log":
-    df = pd.DataFrame(st.session_state.history)
-    
-    if not df.empty:
-        # Prepare Data with Serial Number
-        df.insert(0, 'S.No.', range(1, 1 + len(df)))
+    # Recent Table on Home Page
+    if st.session_state.history:
+        st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 12px;'>Recent Verifications</h3>", unsafe_allow_html=True)
         
-        # --- STRICT COLUMN ORDERING ---
-        # S.No., Status, UDYAM NO., PAN, Entity Name, Time
-        df = df[['S.No.', 'Status', 'UDYAM NO.', 'PAN', 'Entity Name', 'Time']]
-        
-        # Export Controls
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            search_term = st.text_input("Search History", placeholder="Enter PAN or Company Name", label_visibility="collapsed")
-        with col3:
-            excel_data = convert_df_to_excel(df)
-            st.download_button(
-                label="Download Report",
-                data=excel_data,
-                file_name=f"verification_report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-        # Filtering
-        if search_term:
-            df = df[
-                df['PAN'].str.contains(search_term, case=False) | 
-                df['Entity Name'].str.contains(search_term, case=False)
-            ]
-
+        df_recent = process_dataframe(st.session_state.history)
+        # Show only top 5 recent
         st.dataframe(
-            df, 
+            df_recent.head(5),
             use_container_width=True,
             hide_index=True,
             column_config={
@@ -374,38 +366,73 @@ elif selected_page == "History Log":
                 "Time": st.column_config.TextColumn("Time", width="small"),
             }
         )
-    else:
-        st.info("No verification history available. Please verify a PAN first.")
 
 
-# --- PAGE 3: USAGE ANALYTICS ---
-elif selected_page == "Usage Analytics":
-    df = pd.DataFrame(st.session_state.history)
-    
-    if not df.empty:
-        total_calls = len(df)
-        verified_count = len(df[df['Status'] == 'Verified'])
-        not_found_count = len(df[df['Status'] == 'Not Found'])
+# --- PAGE 2: HISTORY LOG ---
+elif selected_page == "History Log":
+    if st.session_state.history:
+        df = process_dataframe(st.session_state.history)
         
-        # Avoid division by zero
-        success_rate = round((verified_count / total_calls) * 100, 1) if total_calls > 0 else 0
+        # --- FILTERS ---
+        with st.container():
+            st.markdown("<div style='background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;'>", unsafe_allow_html=True)
+            f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
+            
+            with f_col1:
+                search_term = st.text_input("🔍 Search", placeholder="PAN or Company Name", label_visibility="collapsed")
+            
+            with f_col2:
+                # S.No Filter (Range)
+                min_sno = int(df['S.No.'].min())
+                max_sno = int(df['S.No.'].max())
+                
+                # Check to prevent slider error if only 1 item
+                if min_sno == max_sno:
+                    selected_range = (min_sno, max_sno)
+                    st.caption(f"S.No: {min_sno}")
+                else:
+                    selected_range = st.slider("S.No. Range", min_value=min_sno, max_value=max_sno, value=(min_sno, max_sno), label_visibility="collapsed")
+            
+            with f_col3:
+                # Filter Logic
+                filtered_df = df.copy()
+                
+                # Apply Text Search
+                if search_term:
+                    filtered_df = filtered_df[
+                        filtered_df['PAN'].str.contains(search_term, case=False) | 
+                        filtered_df['Entity Name'].str.contains(search_term, case=False)
+                    ]
+                
+                # Apply S.No Filter
+                if min_sno != max_sno:
+                    filtered_df = filtered_df[
+                        (filtered_df['S.No.'] >= selected_range[0]) & 
+                        (filtered_df['S.No.'] <= selected_range[1])
+                    ]
+                
+                # Download Button (Exports the FILTERED view)
+                excel_data = convert_df_to_excel(filtered_df)
+                st.download_button(
+                    label="📥 Download Excel",
+                    data=excel_data,
+                    file_name=f"verification_log_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            st.markdown("</div>", unsafe_allow_html=True)
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total API Calls", total_calls)
-        m2.metric("Verified Entities", verified_count)
-        m3.metric("Not Found", not_found_count)
-        m4.metric("Success Rate", f"{success_rate}%")
-
-        st.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)
-        
-        # Simple Charts
-        st.subheader("Verification Status Distribution")
-        status_counts = df['Status'].value_counts()
-        st.bar_chart(status_counts)
-        
-        st.subheader("Recent Activity Log")
-        # Reuse specific column order for consistency in logs
-        st.dataframe(df[['Time', 'PAN', 'Status', 'Entity Name']], use_container_width=True, hide_index=True)
-
-    else:
-        st.info("Insufficient data to generate analytics. Please verify some entities first.")
+        # Main Table
+        st.dataframe(
+            filtered_df, 
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "S.No.": st.column_config.NumberColumn("S.No.", width="small"),
+                "Status": st.column_config.TextColumn("Status", width="small"),
+                "UDYAM NO.": st.column_config.TextColumn("UDYAM NO.", width="medium"),
+                "PAN": st.column_config.TextColumn("PAN", width="medium"),
+                "Entity Name": st.column_config.TextColumn("Entity Name", width="large"),
+                "Time": st.column_config.TextColumn("Time", width="small"),
+            }
+ 
